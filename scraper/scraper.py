@@ -1,9 +1,5 @@
 from requests import get
 from lxml import html
-from datetime import datetime
-from dataclasses import dataclass
-from typing import Self
-
 
 class InvalidPageException(Exception):
     pass
@@ -11,6 +7,7 @@ class InvalidPageException(Exception):
 
 class PageScraper:
     URL: str = ''
+    PAGE_ENC: str = 'utf-8'
 
     def __init__(self):
         (page_str, page) = self.parse_page(self.URL)
@@ -25,7 +22,8 @@ class PageScraper:
             raise InvalidPageException('Page was not found')
 
         page_str = page_str.text
-        page_str = page_str.encode('latin-1').decode('utf-8')
+        if self.PAGE_ENC != 'utf-8':
+            page_str = page_str.encode(self.PAGE_ENC).decode('utf-8')
 
         page: html.HtmlElement = html.fromstring(page_str.encode())
         if page is None:
@@ -71,54 +69,4 @@ class PageScraper:
         return rows
 
 
-@dataclass
-class Concert:
-    name: str
-    date_time: datetime
-    place: str
-    canceled: bool = False
 
-    @classmethod
-    def from_table_row(cls, row: dict[str, str]) -> Self|None:
-        if row['Datum'] is None:
-            return None
-
-        date = row['Datum'].split(' ')[1].strip()
-        time = row['Čas'] or '00:00'
-
-        date_time = datetime.strptime(f'{date} {time}', '%d.%m.%y %H:%M')
-        name = row['Akce']
-        place = row['Místo']
-
-        canceled = False
-        if 'ZRUŠENO' in place:
-            canceled = True
-
-        return cls(name=name, place=place, date_time=date_time, canceled=canceled)
-
-    def __str__(self):
-         return f'{"ZRUŠENO -- " if self.canceled else ""}{self.date_time.strftime("%d.%m %H:%M")} {self.place}: {self.name}'
-
-
-class Concerts(PageScraper):
-    URL = 'http://www.taboranka.cz/index.php?show=produkce'
-
-    def get_concerts(self) -> list[Concert]|None:
-        concerts = []
-        table = self.handle_table('.koncertytable', first_is_header=True)
-        if table is None:
-            return None
-
-        for row in table:
-            concert = Concert.from_table_row(row)
-            if concert is not None:
-                concerts.append(concert)
-
-        return concerts
-
-
-
-if __name__ == '__main__':
-    concert_scraper = Concerts()
-    for c in concert_scraper.get_concerts() or []:
-        print(str(c))
