@@ -18,7 +18,7 @@ def make_taboranka_concert(row: dict[str, str]) -> Concert|None:
         place = place.replace('ZRUŠENO', '').strip()
         canceled = True
 
-    return Concert(name=name, place=place, date_time=date_time, canceled=canceled)
+    return Concert(name=name, place=place, start=date_time, canceled=canceled)
 
 class TaborankaConcerts(PageScraper, ConcertCollection):
     URL = 'http://www.taboranka.cz/index.php?show=produkce'

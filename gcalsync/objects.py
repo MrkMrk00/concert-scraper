@@ -2,8 +2,10 @@ import json
 from typing import Any
 from enum import Enum
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
+from scraper.models import Concert
 
 DEFAULT_TZ = 'Europe/Prague'
 
@@ -50,17 +52,16 @@ class EventTime:
     @classmethod
     def from_datetime(cls, date_time: datetime, include_time: bool = True):
         if date_time.tzinfo is None:
-            date_time.replace(tzinfo=ZoneInfo(DEFAULT_TZ))
+            date_time = date_time.replace(tzinfo=ZoneInfo(DEFAULT_TZ))
 
         if include_time:
-            return cls(dateTime=date_time.isoformat())
+            return cls(dateTime=date_time.isoformat(), timeZone=date_time.tzname())
 
         return cls(
                 date=date_time.strftime('%Y-%m-%d'),
                 dateTime=None,
                 timeZone=date_time.tzname(),
                 )
-
 
 
 @dataclass
@@ -71,7 +72,34 @@ class CalendarEvent:
     location: str|None = None
     description: str|None = None
     reminders: Reminders = field(default_factory=lambda: Reminders.use_default())
+    extendedProperties: dict = field(default_factory=lambda: { 'private': { 'created_by': 'gcalconcertsync' } })
+
+    def to_dict(self):
+        return obj_to_dict(self)
 
     def to_json(self):
         return json.dumps(self, cls=EventSerializer)
 
+
+    @classmethod
+    def from_concert(cls, concert: Concert):
+        return cls(
+                summary=concert.name,
+                location=concert.place,
+                description=f'{concert.description}\nmeta: "gcalconcertsync"',
+                start=EventTime.from_datetime(concert.start),
+                end=EventTime.from_datetime(concert.end or (concert.start + timedelta(hours=2))),
+                )
+
+
+def obj_to_dict(val):
+    ret = None
+
+    try:
+        ret = val.__dict__
+        for k, v in ret.items():
+            ret[k] = obj_to_dict(v)
+    except AttributeError:
+        ret = val
+
+    return ret
