@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from abc import ABCMeta, abstractmethod
 
 @dataclass
 class Concert:
@@ -28,3 +29,10 @@ class Concert:
         str += self.name
 
         return str
+
+
+
+class ConcertCollection(metaclass=ABCMeta):
+    @abstractmethod
+    def get_concerts(self, *args, **kwargs) -> list[Concert]|None:
+        pass

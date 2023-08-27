@@ -9,8 +9,8 @@ class PageScraper:
     URL: str = ''
     PAGE_ENC: str = 'utf-8'
 
-    def __init__(self):
-        (page_str, page) = self.parse_page(self.URL)
+    def init_page(self) -> None:
+        page_str, page = self.parse_page(self.URL)
 
         self._page_str = page_str
         self._page = page
@@ -29,7 +29,7 @@ class PageScraper:
         if page is None:
             raise InvalidPageException('Invalid page')
 
-        return (page_str, page)
+        return page_str, page
 
 
     def handle_table(self, selector: str, first_is_header: bool = False) -> list|None:
