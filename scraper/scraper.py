@@ -1,6 +1,7 @@
 from requests import get
 from lxml import html
 
+
 class InvalidPageException(Exception):
     pass
 

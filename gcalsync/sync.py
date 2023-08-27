@@ -5,15 +5,17 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-DEFAULT_SCOPES = []
+DEFAULT_SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 class CalendarConnection:
 
     def __init__(self,
+                 calendar_id: str,
                  scopes: list[str] = DEFAULT_SCOPES,
                  secret_path: str = path.join(getcwd(), 'app-secret.json'),
-                 user_token_path: str = path.join(getcwd(), 'token.json')
+                 user_token_path: str = path.join(getcwd(), 'token.json'),
                  ) -> None:
+        self._calendar_id = calendar_id
         self._scopes = scopes
         self._secret_path = secret_path
         self._token_path = user_token_path
@@ -52,15 +54,21 @@ class CalendarConnection:
             print(f'Attempted connection to gcal failed: {e}')
 
 
+    def list_events(self, **kwargs):
+        return self.service.events().list(**kwargs, calendarId=self._calendar_id)
+
+
     @property
     def service(self):
         self._connect()
+        if self._service is None:
+            raise Exception('Connection failed')
+
         return self._service
 
-
     def __enter__(self):
-        return self.service
+        return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 

@@ -36,3 +36,4 @@ class ConcertCollection(metaclass=ABCMeta):
     @abstractmethod
     def get_concerts(self, *args, **kwargs) -> list[Concert]|None:
         pass
+
